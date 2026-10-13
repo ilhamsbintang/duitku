@@ -42,13 +42,21 @@ Penting: harus dibuka via **HTTPS** (atau localhost) — service worker dan inst
 - **Data hilang kalau** situs dihapus dari home screen / Safari storage dibersihkan. Karena itu export JSON rutin wajib — app menampilkan peringatan di Pengaturan kalau backup terakhir > 14 hari.
 - Ganti HP: export JSON dari HP lama → import di HP baru (Import JSON menggantikan seluruh data, dengan konfirmasi).
 
-## Deploy (static hosting, butuh HTTPS)
+## Live
 
-Semua file statis, jadi bisa ditaruh di layanan apa pun:
+**https://ilhamsbintang.github.io/duitku/** — GitHub Pages, repo `ilhamsbintang/duitku` (publik, branch `main`, root).
 
-- **GitHub Pages** — push folder ini ke repo, Settings → Pages → branch `main` / root.
-- **Cloudflare Pages / Netlify** — drag & drop foldernya.
-- **Server sendiri** — `python3 -m http.server 8080` (cuma untuk tes di localhost; iPhone butuh HTTPS, pakai reverse proxy + sertifikat, atau tunnel).
+`data/` ada di `.gitignore`: backup JSON berisi transaksi pribadi **tidak** ikut ter-publish ke repo publik.
+
+### Update app
+
+1. Ubah file, lalu naikkan `CACHE = 'duitku-shell-vN'` di `sw.js` (kalau app shell berubah).
+2. `git add -A && git commit -m "..." && git push`
+3. Pages rebuild otomatis ~1 menit. App di HP ambil versi baru saat dibuka (navigasi network-first).
+
+### Alternatif host
+
+Cloudflare Pages / Netlify (drag & drop foldernya), atau server sendiri + HTTPS.
 
 ## Development
 
