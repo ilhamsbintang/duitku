@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Duitku — Catatan Keuangan</title>
+<meta name="description" content="Catatan keuangan pribadi. Offline, tanpa server, data di HP sendiri.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121717" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Duitku">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-plus"><path d="M12 5v14M5 12h14"/></g>
+    <g id="i-left"><path d="M14.5 5.5 8 12l6.5 6.5"/></g>
+    <g id="i-right"><path d="M9.5 5.5 16 12l-6.5 6.5"/></g>
+    <g id="i-close"><path d="M6 6l12 12M18 6 6 18"/></g>
+    <g id="i-trash"><path d="M4.5 7h15M9.5 7V4.8h5V7M7 7l.9 12.2h8.2L17 7"/></g>
+    <g id="i-sliders"><path d="M4 7.5h9M17 7.5h3M4 16.5h3M11 16.5h9"/><circle cx="15" cy="7.5" r="2.1"/><circle cx="9" cy="16.5" r="2.1"/></g>
+    <g id="i-down"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></g>
+    <g id="i-up"><path d="M12 20V9M7.5 13.5 12 9l4.5 4.5M5 5h14"/></g>
+  </defs>
+</svg>
+
+<div class="app">
+  <header class="topbar">
+    <button class="icon-btn" id="prevMonth" aria-label="Bulan sebelumnya"><svg class="i" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
+    <button class="month-btn" id="monthBtn"><span id="monthLabel">—</span></button>
+    <button class="icon-btn" id="nextMonth" aria-label="Bulan berikutnya"><svg class="i" viewBox="0 0 24 24"><use href="#i-right"/></svg></button>
+    <button class="icon-btn" id="settingsBtn" aria-label="Pengaturan dan backup"><svg class="i" viewBox="0 0 24 24"><use href="#i-sliders"/></svg></button>
+  </header>
+
+  <section class="summary" id="summary" aria-live="polite"></section>
+  <main class="list" id="list"></main>
+</div>
+
+<div class="fab-wrap">
+  <button class="fab" id="addBtn"><svg class="i" viewBox="0 0 24 24"><use href="#i-plus"/></svg><span>Catat</span></button>
+</div>
+
+<div class="hint" id="installHint" hidden>
+  <span>Pasang di iPhone: tap <b>Bagikan</b> lalu <b>Add to Home Screen</b>.</span>
+  <button class="icon-btn tiny" id="hideHint" aria-label="Tutup"><svg class="i" viewBox="0 0 24 24"><use href="#i-close"/></svg></button>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+
+<!-- ── Catat / edit transaksi ── -->
+<section class="sheet" id="entrySheet" hidden role="dialog" aria-modal="true" aria-labelledby="entryTitle">
+  <div class="sheet-head">
+    <h2 id="entryTitle">Catat transaksi</h2>
+    <button class="icon-btn" data-close aria-label="Tutup"><svg class="i" viewBox="0 0 24 24"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="sheet-body">
+    <div class="seg" id="typeSeg" role="tablist" aria-label="Jenis transaksi">
+      <button class="seg-btn is-on" data-type="out" role="tab" aria-selected="true">Keluar</button>
+      <button class="seg-btn" data-type="in" role="tab" aria-selected="false">Masuk</button>
+    </div>
+
+    <label class="amount-field">
+      <span class="rp">Rp</span>
+      <input id="amount" class="amount-input" type="text" inputmode="numeric" autocomplete="off"
+             placeholder="0" aria-label="Jumlah">
+    </label>
+
+    <div class="field">
+      <span class="field-label">Tanggal</span>
+      <div class="row-wrap">
+        <input id="date" type="date" class="date-input">
+        <button class="mini" data-date-off="0">Hari ini</button>
+        <button class="mini" data-date-off="1">Kemarin</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Kategori</span>
+      <div class="chips" id="catChips"></div>
+    </div>
+
+    <div class="field" id="subField">
+      <span class="field-label">Sub-kategori <span class="opt">opsional</span></span>
+      <div class="chips" id="subChips"></div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Akun</span>
+      <div class="chips" id="accChips"></div>
+    </div>
+
+    <label class="field">
+      <span class="field-label">Keterangan <span class="opt">opsional</span></span>
+      <input id="note" type="text" class="text-input" placeholder="mis. Bakmie Jogja" autocomplete="off">
+    </label>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn danger ghost" id="deleteTx" hidden><svg class="i" viewBox="0 0 24 24"><use href="#i-trash"/></svg>Hapus</button>
+    <button class="btn primary" id="saveTx">Simpan</button>
+  </div>
+</section>
+
+<!-- ── Pilih bulan ── -->
+<section class="sheet" id="monthSheet" hidden role="dialog" aria-modal="true" aria-labelledby="monthTitle">
+  <div class="sheet-head">
+    <h2 id="monthTitle">Pilih bulan</h2>
+    <button class="icon-btn" data-close aria-label="Tutup"><svg class="i" viewBox="0 0 24 24"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="sheet-body">
+    <div class="row-wrap year-row">
+      <button class="icon-btn" id="prevYear" aria-label="Tahun sebelumnya"><svg class="i" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
+      <span class="year-label" id="yearLabel">—</span>
+      <button class="icon-btn" id="nextYear" aria-label="Tahun berikutnya"><svg class="i" viewBox="0 0 24 24"><use href="#i-right"/></svg></button>
+    </div>
+    <div class="month-grid" id="monthGrid"></div>
+  </div>
+</section>
+
+<!-- ── Pengaturan ── -->
+<section class="sheet" id="settingsSheet" hidden role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="sheet-head">
+    <h2 id="setTitle">Pengaturan</h2>
+    <button class="icon-btn" data-close aria-label="Tutup"><svg class="i" viewBox="0 0 24 24"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="sheet-body">
+
+    <div class="field">
+      <span class="field-label">Tema</span>
+      <div class="seg" id="themeSeg" role="tablist">
+        <button class="seg-btn" data-theme="auto" role="tab">Auto</button>
+        <button class="seg-btn" data-theme="light" role="tab">Terang</button>
+        <button class="seg-btn" data-theme="dark" role="tab">Gelap</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Akun / sumber dana</span>
+      <div class="chips" id="accManage"></div>
+      <div class="inline-add">
+        <input id="newAcc" class="text-input" placeholder="Nama akun baru" autocomplete="off">
+        <button class="mini" id="addAcc">Tambah</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Kategori &amp; sub-kategori</span>
+      <div class="seg" id="catTypeSeg" role="tablist">
+        <button class="seg-btn is-on" data-cat-type="out" role="tab">Pengeluaran</button>
+        <button class="seg-btn" data-cat-type="in" role="tab">Pemasukan</button>
+      </div>
+      <div id="catManage" class="cat-manage"></div>
+      <div class="inline-add">
+        <input id="newCat" class="text-input" placeholder="Kategori baru" autocomplete="off">
+        <button class="mini" id="addCat">Tambah</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Cadangan</span>
+      <p class="backup-note" id="backupNote"></p>
+      <div class="btn-row">
+        <button class="btn ghost" id="exportJson"><svg class="i" viewBox="0 0 24 24"><use href="#i-up"/></svg>Export JSON</button>
+        <button class="btn ghost" id="exportCsv"><svg class="i" viewBox="0 0 24 24"><use href="#i-up"/></svg>Export CSV</button>
+        <button class="btn ghost" id="importBtn"><svg class="i" viewBox="0 0 24 24"><use href="#i-down"/></svg>Import JSON</button>
+      </div>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Hapus data</span>
+      <div class="btn-row">
+        <button class="btn danger ghost" id="wipe"><svg class="i" viewBox="0 0 24 24"><use href="#i-trash"/></svg>Hapus semua transaksi</button>
+      </div>
+    </div>
+
+    <p class="tiny-note" id="storeNote"></p>
+  </div>
+</section>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
