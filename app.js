@@ -673,7 +673,7 @@ function renderDupRow() {
   const last = recentTx(1)[0];
   if (!last) { btn.hidden = true; return; }
   btn.hidden = false;
-  $('#dupHint').textContent = 'Terakhir: ' + dupTitle(last) + ' · ' + money(last.amount) + ' · ' + dayLabel(last.date);
+  $('#dupHint').textContent = dupTitle(last) + ' · ' + money(last.amount) + ' · ' + dayLabel(last.date);
 }
 function renderDupList() {
   const list = recentTx(14);
