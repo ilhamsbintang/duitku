@@ -1,16 +1,16 @@
 /* Duitku service worker — app shell, stale-while-revalidate.
    Data transaksi TIDAK lewat sini; semuanya di localStorage HP. */
-const CACHE = 'duitku-shell-v13';
+const CACHE = 'duitku-shell-v14';
 const ASSETS = [
   './',
   './index.html',
   './app.css',
   './app.js',
   './manifest.webmanifest',
-  './icons/icon-180.png',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-maskable-512.png'
+  './icons/duitku-gold-180.png',
+  './icons/duitku-gold-192.png',
+  './icons/duitku-gold-512.png',
+  './icons/duitku-gold-maskable-512.png'
 ];
 
 self.addEventListener('install', (e) => {
