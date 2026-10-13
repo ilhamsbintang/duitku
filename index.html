@@ -2,7 +2,7 @@
 <html lang="id" data-theme="auto">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Duitku — Catatan Keuangan</title>
 <meta name="description" content="Catatan keuangan pribadi: dompet, transfer, laporan bulanan. Offline, data di HP sendiri.">
 <link rel="manifest" href="manifest.webmanifest">
@@ -110,6 +110,11 @@
       </div>
     </div>
 
+    <div class="field" id="recentField" hidden>
+      <span class="field-label">Sering dicatat</span>
+      <div class="chips chip-row" id="recentChips"></div>
+    </div>
+
     <div class="field" id="catField">
       <span class="field-label">Kategori</span>
       <div class="chips" id="catChips"></div>
@@ -117,12 +122,12 @@
 
     <div class="field" id="subField">
       <span class="field-label">Sub-kategori <span class="opt">opsional</span></span>
-      <div class="chips" id="subChips"></div>
+      <div class="chips chip-row" id="subChips"></div>
     </div>
 
     <div class="field" id="accField">
       <span class="field-label">Dompet</span>
-      <div class="chips" id="accChips"></div>
+      <div class="chips chip-row" id="accChips"></div>
     </div>
 
     <div class="field" id="fromField" hidden>
@@ -142,6 +147,7 @@
   </div>
   <div class="sheet-foot">
     <button class="btn danger ghost" id="deleteTx" hidden><svg class="i" viewBox="0 0 24 24"><use href="#i-trash"/></svg>Hapus</button>
+    <button class="btn ghost" id="saveMore">Simpan &amp; lagi</button>
     <button class="btn primary" id="saveTx">Simpan</button>
   </div>
 </section>

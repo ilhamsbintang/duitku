@@ -269,7 +269,8 @@ function renderList() {
   const el = $('#list');
   if (!list.length) {
     el.innerHTML = '<div class="empty"><b>Belum ada catatan bulan ini</b>' +
-      'Tap tombol + di bawah untuk mulai. Data tersimpan di HP ini saja.</div>';
+      'Tap tombol + di bawah untuk mulai. Kalau data lo ada di file backup JSON, ' +
+      'import lewat ikon pengaturan di kanan atas → Import JSON.</div>';
     return;
   }
   const groups = [];
@@ -583,6 +584,8 @@ function drawCharts() {
 function openSheet(id) {
   const el = $('#' + id);
   const scrim = $('#scrim');
+  const hint = $('#installHint');
+  if (hint) hint.hidden = true;
   $$('.sheet').forEach((s) => { if (s.id !== id) s.classList.remove('on'); });
   el.hidden = false;
   scrim.hidden = false;
@@ -646,8 +649,48 @@ function openEntry(tx, preset) {
   if (!tx) setTimeout(() => $('#amount').focus(), 280);
 }
 
+function recentCombos(n) {
+  const agg = new Map();
+  data.tx.forEach((t) => {
+    if (t.type === 'transfer' || !t.category) return;
+    const key = t.type + '|' + t.category + '|' + (t.subcategory || '') + '|' + (t.account || '');
+    agg.set(key, (agg.get(key) || 0) + 1);
+  });
+  return Array.from(agg.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([key, count]) => {
+      const [type, category, subcategory, account] = key.split('|');
+      return { type, category, subcategory, account, count };
+    });
+}
+
+function renderRecent(isTr) {
+  const field = $('#recentField');
+  if (isTr) { field.hidden = true; return; }
+  const list = recentCombos(7).filter((c) =>
+    !(c.type === entry.type && c.category === entry.category &&
+      c.subcategory === entry.subcategory && c.account === entry.account));
+  if (!list.length) { field.hidden = true; $('#recentChips').innerHTML = ''; return; }
+  field.hidden = false;
+  $('#recentChips').innerHTML = list.map((c, i) =>
+    '<button class="chip" data-recent="' + i + '">' + esc(c.category) +
+    (c.subcategory ? ' · ' + esc(c.subcategory) : '') +
+    '<span class="hint">' + esc(c.account) + '</span></button>').join('');
+  $$('#recentChips .chip').forEach((b) => b.addEventListener('click', () => {
+    const c = list[Number(b.dataset.recent)];
+    entry.type = c.type;
+    entry.category = c.category;
+    entry.subcategory = c.subcategory;
+    entry.account = c.account;
+    renderEntryChips();
+    toast(c.category + (c.subcategory ? ' · ' + c.subcategory : '') + ' · ' + c.account);
+  }));
+}
+
 function renderEntryChips() {
   const isTr = entry.type === 'transfer';
+  renderRecent(isTr);
   $$('#typeSeg .seg-btn').forEach((b) => {
     const on = b.dataset.type === entry.type;
     b.classList.toggle('is-on', on);
@@ -722,7 +765,7 @@ function renderEntryChips() {
   $('#saveTx').disabled = !(amountValue(entry.amountText) > 0);
 }
 
-function saveEntry() {
+function saveEntry(again) {
   const amount = amountValue(entry.amountText);
   if (!(amount > 0)) { toast('Isi jumlahnya dulu'); $('#amount').focus(); return; }
   if (entry.type === 'transfer' && (!entry.toAccount || entry.toAccount === entry.account)) {
@@ -752,9 +795,19 @@ function saveEntry() {
   data.settings.lastTo = entry.toAccount;
   save();
   ui.month = rec.date.slice(0, 7);
-  closeSheet();
+  const wasEdit = !!entry.id;
   render();
-  toast(entry.id ? 'Perubahan disimpan'
+  if (again && !wasEdit) {
+    entry.amountText = '';
+    $('#amount').value = '';
+    renderEntryChips();
+    $('#saveTx').disabled = true;
+    setTimeout(() => $('#amount').focus(), 60);
+    toast('Tercatat: ' + money(amount) + ' · lanjut catat lagi');
+    return;
+  }
+  closeSheet();
+  toast(wasEdit ? 'Perubahan disimpan'
     : (rec.type === 'transfer' ? 'Transfer: ' + money(amount) : 'Tercatat: ' + money(amount)));
 }
 
@@ -921,6 +974,8 @@ function importJson(file) {
       cats: parsed.cats,
       tx: incoming
     });
+    const newest = data.tx.slice().sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+    if (newest) ui.month = newest.date.slice(0, 7);
     save(); closeSheet(); render();
     toast('Import selesai: ' + data.tx.length + ' catatan');
   };
@@ -1017,7 +1072,8 @@ function wire() {
     entry.date = toISO(d);
     $('#date').value = entry.date;
   }));
-  $('#saveTx').addEventListener('click', saveEntry);
+  $('#saveTx').addEventListener('click', () => saveEntry(false));
+  $('#saveMore').addEventListener('click', () => saveEntry(true));
   $('#deleteTx').addEventListener('click', deleteEntry);
 
   $('#saveOpening').addEventListener('click', saveOpening);
@@ -1118,6 +1174,17 @@ function boot() {
     $('#installHint').firstElementChild.innerHTML = ios
       ? 'Pasang di iPhone: tap <b>Bagikan</b> lalu <b>Add to Home Screen</b>.'
       : 'Pasang sebagai app: menu browser → <b>Install / Add to Home Screen</b>.';
+  }
+
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    const fit = () => {
+      document.documentElement.style.setProperty('--vvh', Math.round(vv.height) + 'px');
+      document.documentElement.style.setProperty('--vvo', Math.round(vv.offsetTop || 0) + 'px');
+    };
+    vv.addEventListener('resize', fit);
+    vv.addEventListener('scroll', fit);
+    fit();
   }
 
   if ('serviceWorker' in navigator &&
