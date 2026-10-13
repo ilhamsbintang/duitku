@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Duitku — Catatan Keuangan</title>
-<meta name="description" content="Catatan keuangan pribadi. Offline, tanpa server, data di HP sendiri.">
+<meta name="description" content="Catatan keuangan pribadi: dompet, transfer, laporan bulanan. Offline, data di HP sendiri.">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#121717" media="(prefers-color-scheme: dark)">
@@ -29,6 +29,10 @@
     <g id="i-sliders"><path d="M4 7.5h9M17 7.5h3M4 16.5h3M11 16.5h9"/><circle cx="15" cy="7.5" r="2.1"/><circle cx="9" cy="16.5" r="2.1"/></g>
     <g id="i-down"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></g>
     <g id="i-up"><path d="M12 20V9M7.5 13.5 12 9l4.5 4.5M5 5h14"/></g>
+    <g id="i-list"><path d="M4.5 7h15M4.5 12h15M4.5 17h9"/></g>
+    <g id="i-wallet"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6.5A2.5 2.5 0 0 1 4 16.5z"/><path d="M15.5 11.5h4.5"/></g>
+    <g id="i-chart"><path d="M4.5 19.5h15"/><path d="M7.5 19.5V11M12 19.5V5M16.5 19.5v-6"/></g>
+    <g id="i-swap"><path d="M6 9h11l-3-3M18 15H7l3 3"/></g>
   </defs>
 </svg>
 
@@ -37,16 +41,39 @@
     <button class="icon-btn" id="prevMonth" aria-label="Bulan sebelumnya"><svg class="i" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
     <button class="month-btn" id="monthBtn"><span id="monthLabel">—</span></button>
     <button class="icon-btn" id="nextMonth" aria-label="Bulan berikutnya"><svg class="i" viewBox="0 0 24 24"><use href="#i-right"/></svg></button>
+    <span class="topbar-title" id="topbarTitle" hidden>Dompet</span>
     <button class="icon-btn" id="settingsBtn" aria-label="Pengaturan dan backup"><svg class="i" viewBox="0 0 24 24"><use href="#i-sliders"/></svg></button>
   </header>
 
-  <section class="summary" id="summary" aria-live="polite"></section>
-  <main class="list" id="list"></main>
+  <main class="view" id="viewTx">
+    <section class="summary" id="summary" aria-live="polite"></section>
+    <div class="list" id="list"></div>
+  </main>
+
+  <main class="view" id="viewWallet" hidden>
+    <section class="summary" id="walletSummary"></section>
+    <div class="wallet-list" id="walletList"></div>
+    <div class="pad">
+      <div class="inline-add">
+        <input id="newWallet" class="text-input" placeholder="Dompet / akun baru" autocomplete="off">
+        <button class="mini" id="addWalletBtn">Tambah</button>
+      </div>
+      <p class="tiny-note">Saldo dompet = saldo awal + semua mutasi di catatan. Tap dompetnya buat atur saldo awal.</p>
+    </div>
+  </main>
+
+  <main class="view" id="viewReport" hidden>
+    <section class="report" id="report"></section>
+  </main>
 </div>
 
-<div class="fab-wrap">
-  <button class="fab" id="addBtn"><svg class="i" viewBox="0 0 24 24"><use href="#i-plus"/></svg><span>Catat</span></button>
-</div>
+<nav class="tabbar" id="tabbar">
+  <button class="tab is-on" data-tab="tx" aria-selected="true"><svg class="i" viewBox="0 0 24 24"><use href="#i-list"/></svg><span>Transaksi</span></button>
+  <button class="tab" data-tab="wallet" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><use href="#i-wallet"/></svg><span>Dompet</span></button>
+  <button class="tab" data-tab="report" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><use href="#i-chart"/></svg><span>Laporan</span></button>
+</nav>
+
+<button class="fab" id="addBtn" aria-label="Catat transaksi"><svg class="i" viewBox="0 0 24 24"><use href="#i-plus"/></svg></button>
 
 <div class="hint" id="installHint" hidden>
   <span>Pasang di iPhone: tap <b>Bagikan</b> lalu <b>Add to Home Screen</b>.</span>
@@ -65,6 +92,7 @@
     <div class="seg" id="typeSeg" role="tablist" aria-label="Jenis transaksi">
       <button class="seg-btn is-on" data-type="out" role="tab" aria-selected="true">Keluar</button>
       <button class="seg-btn" data-type="in" role="tab" aria-selected="false">Masuk</button>
+      <button class="seg-btn" data-type="transfer" role="tab" aria-selected="false">Transfer</button>
     </div>
 
     <label class="amount-field">
@@ -82,7 +110,7 @@
       </div>
     </div>
 
-    <div class="field">
+    <div class="field" id="catField">
       <span class="field-label">Kategori</span>
       <div class="chips" id="catChips"></div>
     </div>
@@ -92,9 +120,19 @@
       <div class="chips" id="subChips"></div>
     </div>
 
-    <div class="field">
-      <span class="field-label">Akun</span>
+    <div class="field" id="accField">
+      <span class="field-label">Dompet</span>
       <div class="chips" id="accChips"></div>
+    </div>
+
+    <div class="field" id="fromField" hidden>
+      <span class="field-label">Dari dompet</span>
+      <div class="chips" id="fromChips"></div>
+    </div>
+
+    <div class="field" id="toField" hidden>
+      <span class="field-label">Ke dompet</span>
+      <div class="chips" id="toChips"></div>
     </div>
 
     <label class="field">
@@ -105,6 +143,43 @@
   <div class="sheet-foot">
     <button class="btn danger ghost" id="deleteTx" hidden><svg class="i" viewBox="0 0 24 24"><use href="#i-trash"/></svg>Hapus</button>
     <button class="btn primary" id="saveTx">Simpan</button>
+  </div>
+</section>
+
+<!-- ── Detail dompet ── -->
+<section class="sheet" id="walletSheet" hidden role="dialog" aria-modal="true" aria-labelledby="walletTitle">
+  <div class="sheet-head">
+    <h2 id="walletTitle">Dompet</h2>
+    <button class="icon-btn" data-close aria-label="Tutup"><svg class="i" viewBox="0 0 24 24"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="sheet-body">
+    <div class="wallet-hero">
+      <span class="sum-label">Saldo saat ini</span>
+      <strong class="sum-value num" id="walletBalance">Rp 0</strong>
+      <span class="tiny-note" id="walletMeta"></span>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Saldo awal <span class="opt">sebelum catatan ini</span></span>
+      <div class="row-wrap">
+        <label class="amount-field compact">
+          <span class="rp">Rp</span>
+          <input id="walletOpening" class="amount-input" type="text" inputmode="numeric"
+                 autocomplete="off" placeholder="0" aria-label="Saldo awal">
+        </label>
+        <button class="mini" id="saveOpening">Simpan</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Rincian (semua waktu)</span>
+      <div class="kv-list" id="walletDetail"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn ghost" id="transferFrom"><svg class="i" viewBox="0 0 24 24"><use href="#i-swap"/></svg>Transfer dari sini</button>
+      <button class="btn danger ghost" id="deleteWallet"><svg class="i" viewBox="0 0 24 24"><use href="#i-trash"/></svg>Hapus dompet</button>
+    </div>
   </div>
 </section>
 
@@ -138,15 +213,6 @@
         <button class="seg-btn" data-theme="auto" role="tab">Auto</button>
         <button class="seg-btn" data-theme="light" role="tab">Terang</button>
         <button class="seg-btn" data-theme="dark" role="tab">Gelap</button>
-      </div>
-    </div>
-
-    <div class="field">
-      <span class="field-label">Akun / sumber dana</span>
-      <div class="chips" id="accManage"></div>
-      <div class="inline-add">
-        <input id="newAcc" class="text-input" placeholder="Nama akun baru" autocomplete="off">
-        <button class="mini" id="addAcc">Tambah</button>
       </div>
     </div>
 

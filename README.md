@@ -25,7 +25,9 @@ Penting: harus dibuka via **HTTPS** (atau localhost) — service worker dan inst
 
 ## Fitur
 
-- Catat cepat masuk/keluar: jumlah, kategori, sub-kategori, akun, keterangan, tanggal
+- Catat cepat masuk/keluar/transfer: jumlah, kategori, sub-kategori, dompet, keterangan, tanggal
+- **Dompet + saldo**: saldo awal per dompet, saldo berjalan, mutasi bulan ini, transfer antar dompet (tidak dihitung pemasukan/pengeluaran)
+- **Laporan bulanan**: grafik batang 6 bulan (masuk vs keluar), pengeluaran harian, rekap kategori + sub-kategori, mutasi per dompet
 - Kategori & sub-kategori mengikuti workbook `Laporan_Keuangan_Sep-Okt_2026.xlsx`
   (Pinjaman/Kartu kredit, Makanan & minuman/Pacaran, Kesehatan & olahraga/Olahraga…)
 - Akun: Superbank, Mandiri, Mayapada, ShopeePay, Cash, myBCA, Flazz (bisa ditambah/hapus)
@@ -71,9 +73,9 @@ Naikkan versi cache di `sw.js` (`CACHE = 'duitku-shell-vN'`) setiap kali file ap
 
 ```json
 {
-  "version": 1,
-  "settings": { "theme": "auto", "lastBackup": "2026-10-13T...", "lastCat": {"out":"Makanan & minuman","in":"Pemasukan"}, "lastAcc": "Superbank" },
-  "accounts": ["Superbank", "Cash"],
+  "version": 2,
+  "settings": { "theme": "auto", "lastBackup": "2026-10-13", "lastCat": {"out":"Makanan & minuman","in":"Pemasukan"}, "lastWallet": "Superbank", "lastTo": "Cash" },
+  "wallets": [{ "name": "Superbank", "opening": 750000 }, { "name": "Cash", "opening": 150000 }],
   "cats": { "out": [{ "name": "Transportasi", "subs": ["Bensin", "Biaya parkir"] }], "in": [] },
   "tx": [{ "id": "abc123", "date": "2026-10-13", "type": "out", "amount": 29600,
            "category": "Transportasi", "subcategory": "Bensin", "account": "Superbank",

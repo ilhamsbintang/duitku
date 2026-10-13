@@ -136,9 +136,9 @@ def main():
 
     os.makedirs(OUT_DIR, exist_ok=True)
     payload = {
-        'app': 'duitku', 'version': 1,
+        'app': 'duitku', 'version': 2,
         'exportedAt': datetime.now().astimezone().isoformat(),
-        'accounts': accounts, 'cats': cats, 'tx': tx,
+        'wallets': [{'name': a, 'opening': 0} for a in accounts], 'cats': cats, 'tx': tx,
     }
     jpath = os.path.join(OUT_DIR, 'duitku-backup-2026-08-29_2026-10-13.json')
     with open(jpath, 'w', encoding='utf-8') as fh:
