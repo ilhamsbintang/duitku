@@ -381,8 +381,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
 .chip-row { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding-bottom: 1px;
-  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
-  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%); scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 46px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 46px), transparent 100%); scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .chip-row::-webkit-scrollbar { display: none; }
 .chip-row .chip { flex: 0 0 auto; }
 .chip .hint { color: var(--ink-3); font-weight: 500; margin-left: 5px; }
