@@ -903,6 +903,12 @@ function renderSettings() {
   }));
 }
 
+function renderSettingsSilently() {
+  const sheet = $('#settingsSheet');
+  if (!sheet || sheet.hidden) return;
+  renderSettings();
+}
+
 /* ── backup ───────────────────────────────────────────────────────── */
 function stamp() {
   const d = new Date();
@@ -977,7 +983,10 @@ function importJson(file) {
     const newest = data.tx.slice().sort((a, b) => (a.date < b.date ? 1 : -1))[0];
     if (newest) ui.month = newest.date.slice(0, 7);
     save(); closeSheet(); render();
-    toast('Import selesai: ' + data.tx.length + ' catatan');
+    const dates = data.tx.map((t) => t.date).sort();
+    toast('Import selesai: ' + data.tx.length + ' catatan' +
+      (dates.length ? ' (' + dates[0] + ' – ' + dates[dates.length - 1] + ')' : ''));
+    renderSettingsSilently();
   };
   fr.readAsText(file);
 }
