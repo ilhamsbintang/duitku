@@ -1,6 +1,6 @@
 /* Duitku service worker — app shell, stale-while-revalidate.
    Data transaksi TIDAK lewat sini; semuanya di localStorage HP. */
-const CACHE = 'duitku-shell-v11';
+const CACHE = 'duitku-shell-v12';
 const ASSETS = [
   './',
   './index.html',

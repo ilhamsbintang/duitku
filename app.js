@@ -631,13 +631,21 @@ function openEntry(tx, preset) {
     $('#entryTitle').textContent = tx.type === 'transfer' ? 'Ubah transfer' : 'Ubah transaksi';
   } else {
     const p = preset || {};
+    const d = p.dup || null;
     entry = {
-      id: null, type: p.type || 'out', amountText: '', date: todayISO(),
-      category: data.settings.lastCat.out || (catsOf('out')[0] || {}).name || '',
-      subcategory: '', account: p.account || lastW, toAccount: p.toAccount || lastTo, note: ''
+      id: null,
+      type: d ? d.type : (p.type || 'out'),
+      amountText: d ? fmtTyping(String(d.amount).replace('.', ',')) : '',
+      date: todayISO(),
+      category: d ? d.category : (data.settings.lastCat.out || (catsOf('out')[0] || {}).name || ''),
+      subcategory: d ? d.subcategory : '',
+      account: d ? d.account : (p.account || lastW),
+      toAccount: d ? (d.toAccount || lastTo) : (p.toAccount || lastTo),
+      note: d ? d.note : ''
     };
-    $('#note').value = '';
+    $('#note').value = entry.note;
     $('#entryTitle').textContent = entry.type === 'transfer' ? 'Catat transfer' : 'Catat transaksi';
+    if (d) setTimeout(() => toast('Duplikat: ' + dupTitle(d) + ' · ' + money(d.amount)), 380);
   }
   $('#deleteTx').hidden = !tx;
   $('#deleteTx').textContent = 'Hapus';
@@ -645,52 +653,50 @@ function openEntry(tx, preset) {
   $('#amount').value = entry.amountText;
   $('#date').value = entry.date;
   renderEntryChips();
+  if (tx) $('#dupBtn').hidden = true;
   openSheet('entrySheet');
-  if (!tx) setTimeout(() => $('#amount').focus(), 280);
+  if (!tx && !(preset && preset.dup)) setTimeout(() => $('#amount').focus(), 280);
 }
 
-function recentCombos(n) {
-  const agg = new Map();
-  data.tx.forEach((t) => {
-    if (t.type === 'transfer' || !t.category) return;
-    const key = t.type + '|' + t.category + '|' + (t.subcategory || '') + '|' + (t.account || '');
-    agg.set(key, (agg.get(key) || 0) + 1);
-  });
-  return Array.from(agg.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, n)
-    .map(([key, count]) => {
-      const [type, category, subcategory, account] = key.split('|');
-      return { type, category, subcategory, account, count };
-    });
+function recentTx(n) {
+  return data.tx.slice()
+    .sort((a, b) => (a.date === b.date ? (b.createdAt || 0) - (a.createdAt || 0) : (a.date < b.date ? 1 : -1)))
+    .slice(0, n);
 }
-
-function renderRecent(isTr) {
-  const field = $('#recentField');
-  if (isTr) { field.hidden = true; return; }
-  const list = recentCombos(7).filter((c) =>
-    !(c.type === entry.type && c.category === entry.category &&
-      c.subcategory === entry.subcategory && c.account === entry.account));
-  if (!list.length) { field.hidden = true; $('#recentChips').innerHTML = ''; return; }
-  field.hidden = false;
-  $('#recentChips').innerHTML = list.map((c, i) =>
-    '<button class="chip" data-recent="' + i + '">' + esc(c.category) +
-    (c.subcategory ? ' · ' + esc(c.subcategory) : '') +
-    '<span class="hint">' + esc(c.account) + '</span></button>').join('');
-  $$('#recentChips .chip').forEach((b) => b.addEventListener('click', () => {
-    const c = list[Number(b.dataset.recent)];
-    entry.type = c.type;
-    entry.category = c.category;
-    entry.subcategory = c.subcategory;
-    entry.account = c.account;
-    renderEntryChips();
-    toast(c.category + (c.subcategory ? ' · ' + c.subcategory : '') + ' · ' + c.account);
+function dupTitle(t) {
+  return t.type === 'transfer'
+    ? 'Transfer ' + t.account + ' → ' + (t.toAccount || '?')
+    : (t.category + (t.subcategory ? ' · ' + t.subcategory : ''));
+}
+function renderDupRow() {
+  const btn = $('#dupBtn');
+  const last = recentTx(1)[0];
+  if (!last) { btn.hidden = true; return; }
+  btn.hidden = false;
+  $('#dupHint').textContent = 'Terakhir: ' + dupTitle(last) + ' · ' + money(last.amount) + ' · ' + dayLabel(last.date);
+}
+function renderDupList() {
+  const list = recentTx(14);
+  $('#dupList').innerHTML = list.length
+    ? '<div class="dup-list">' + list.map((t, i) => {
+        const sub = [dayLabel(t.date), t.type === 'transfer' ? '' : t.account, t.note].filter(Boolean).join(' · ');
+        const sign = t.type === 'in' ? '+' : (t.type === 'out' ? '−' : '');
+        return '<button class="dup-item" data-dup="' + i + '">' +
+          '<span class="m"><span class="t">' + esc(dupTitle(t)) + '</span>' +
+          '<span class="s">' + esc(sub) + '</span></span>' +
+          '<span class="a num">' + sign + money(t.amount).replace('−', '') + '</span></button>';
+      }).join('') + '</div>'
+    : '<p class="tiny-note">Belum ada transaksi untuk diduplikat.</p>';
+  $$('#dupList .dup-item').forEach((b) => b.addEventListener('click', () => {
+    const t = list[Number(b.dataset.dup)];
+    closeSheet();
+    setTimeout(() => openEntry(null, { dup: t }), 260);
   }));
 }
 
 function renderEntryChips() {
   const isTr = entry.type === 'transfer';
-  renderRecent(isTr);
+  renderDupRow();
   $$('#typeSeg .seg-btn').forEach((b) => {
     const on = b.dataset.type === entry.type;
     b.classList.toggle('is-on', on);
@@ -1081,6 +1087,7 @@ function wire() {
     entry.date = toISO(d);
     $('#date').value = entry.date;
   }));
+  $('#dupBtn').addEventListener('click', () => { renderDupList(); openSheet('dupSheet'); });
   $('#saveTx').addEventListener('click', () => saveEntry(false));
   $('#saveMore').addEventListener('click', () => saveEntry(true));
   $('#deleteTx').addEventListener('click', deleteEntry);
